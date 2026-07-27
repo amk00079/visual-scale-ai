@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTryOnRouteImport } from './routes/api/try-on'
+import { Route as ApiAdCopyRouteImport } from './routes/api/ad-copy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTryOnRoute = ApiTryOnRouteImport.update({
+  id: '/api/try-on',
+  path: '/api/try-on',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdCopyRoute = ApiAdCopyRouteImport.update({
+  id: '/api/ad-copy',
+  path: '/api/ad-copy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/ad-copy': typeof ApiAdCopyRoute
+  '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/ad-copy': typeof ApiAdCopyRoute
+  '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/ad-copy': typeof ApiAdCopyRoute
+  '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/ad-copy' | '/api/try-on'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/ad-copy' | '/api/try-on'
+  id: '__root__' | '/' | '/api/ad-copy' | '/api/try-on'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAdCopyRoute: typeof ApiAdCopyRoute
+  ApiTryOnRoute: typeof ApiTryOnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +68,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/try-on': {
+      id: '/api/try-on'
+      path: '/api/try-on'
+      fullPath: '/api/try-on'
+      preLoaderRoute: typeof ApiTryOnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ad-copy': {
+      id: '/api/ad-copy'
+      path: '/api/ad-copy'
+      fullPath: '/api/ad-copy'
+      preLoaderRoute: typeof ApiAdCopyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAdCopyRoute: ApiAdCopyRoute,
+  ApiTryOnRoute: ApiTryOnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
