@@ -1,8 +1,12 @@
+export type HotspotView = "model" | "card";
+
 export interface Hotspot {
   id: string;
   label: string;
   position: string;
   normal: string;
+  view: HotspotView;
+  source: "manual" | "ai";
 }
 
 export const newHotspotId = () =>

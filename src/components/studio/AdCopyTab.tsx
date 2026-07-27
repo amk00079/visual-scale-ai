@@ -20,7 +20,12 @@ interface Campaign {
 
 const TONES = ["Playful", "Luxury", "Minimal", "Bold", "Friendly"];
 
-export function AdCopyTab() {
+interface AdCopyTabProps {
+  features: string[];
+  suggestedName?: string;
+}
+
+export function AdCopyTab({ features, suggestedName }: AdCopyTabProps) {
   const [productName, setProductName] = useState("");
   const [audience, setAudience] = useState("");
   const [tone, setTone] = useState("Bold");
@@ -39,9 +44,10 @@ export function AdCopyTab() {
       const res = await fetch("/api/ad-copy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productName, audience, tone }),
+        body: JSON.stringify({ productName, audience, tone, features }),
       });
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
       setCampaign({
         headline: String(data.headline ?? ""),
@@ -65,15 +71,36 @@ export function AdCopyTab() {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border border-border bg-surface/60 p-3 text-xs text-muted-foreground">
+        {features.length ? (
+          <>
+            Copy will be written around your{" "}
+            <span className="text-foreground">{features.length} hotspot callout(s)</span>:{" "}
+            <span className="text-primary-glow">{features.join(" · ")}</span>
+          </>
+        ) : (
+          "Add hotspot callouts to constrain the campaign to your product's real features."
+        )}
+      </div>
       <div className="space-y-2">
         <Label htmlFor="product-name">Product name</Label>
         <Input
           id="product-name"
           value={productName}
           onChange={(e) => setProductName(e.target.value)}
-          placeholder="Aero Ceramic Travel Mug"
+          placeholder={suggestedName || "Aero Ceramic Travel Mug"}
         />
+        {suggestedName && !productName && (
+          <button
+            type="button"
+            className="text-[11px] text-primary-glow underline-offset-2 hover:underline"
+            onClick={() => setProductName(suggestedName)}
+          >
+            Use AI suggestion: {suggestedName}
+          </button>
+        )}
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="audience">Target audience</Label>
         <Input
