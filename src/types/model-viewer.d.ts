@@ -14,9 +14,14 @@ declare module "react" {
           "camera-controls"?: boolean;
           "disable-pan"?: boolean;
           "disable-tap"?: boolean;
+          "disable-zoom"?: boolean;
+          "auto-rotate"?: boolean;
+          "auto-rotate-delay"?: string;
+          "rotation-per-second"?: string;
           "touch-action"?: string;
           "interaction-prompt"?: string;
           "camera-orbit"?: string;
+          "camera-target"?: string;
           "min-camera-orbit"?: string;
           "max-camera-orbit"?: string;
           "min-field-of-view"?: string;
@@ -24,6 +29,9 @@ declare module "react" {
           "field-of-view"?: string;
           "interpolation-decay"?: string;
           "environment-image"?: string;
+          "tone-mapping"?: string;
+          loading?: string;
+          reveal?: string;
           style?: CSSProperties;
         },
         HTMLElement
@@ -32,8 +40,21 @@ declare module "react" {
   }
 }
 
+export interface CameraOrbit {
+  theta: number;
+  phi: number;
+  radius: number;
+  toString(): string;
+}
+
 export interface ModelViewerElement extends HTMLElement {
   src: string;
+  cameraOrbit: string;
+  fieldOfView: string;
+  loaded: boolean;
+  getCameraOrbit(): CameraOrbit;
+  getFieldOfView(): number;
+  jumpCameraToGoal(): void;
   positionAndNormalFromPoint(
     x: number,
     y: number,
