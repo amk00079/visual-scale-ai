@@ -48,8 +48,6 @@ export const Route = createFileRoute("/api/ad-copy")({
 Product: ${productName}
 Target audience: ${audience}
 Brand tone: ${tone}
-
-Brand tone: ${tone}
 Hotspot callouts (the exact features highlighted on the 3D model): ${
                   features.length ? JSON.stringify(features) : "[]"
                 }
