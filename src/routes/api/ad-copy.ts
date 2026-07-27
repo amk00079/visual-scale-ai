@@ -20,6 +20,10 @@ export const Route = createFileRoute("/api/ad-copy")({
         const productName = (body.productName ?? "").trim();
         const audience = (body.audience ?? "").trim();
         const tone = (body.tone ?? "Bold").trim();
+        const features = Array.isArray(body.features)
+          ? body.features.map(String).filter(Boolean).slice(0, 8)
+          : [];
+
         if (!productName || !audience) {
           return json({ error: "Product name and target audience are required" }, 400);
         }
@@ -45,11 +49,22 @@ Product: ${productName}
 Target audience: ${audience}
 Brand tone: ${tone}
 
+Brand tone: ${tone}
+Hotspot callouts (the exact features highlighted on the 3D model): ${
+                  features.length ? JSON.stringify(features) : "[]"
+                }
+
 Return strict JSON with this shape:
 {"headline": string, "hooks": [string, string, string], "description": string}
 - headline: max 9 words, punchy, matches the ${tone} tone.
 - hooks: 3 scroll-stopping one-liners (max 14 words each) aimed at ${audience}.
-- description: 45-70 word product description in the ${tone} tone.`,
+- description: 45-70 word product description in the ${tone} tone.
+${
+  features.length
+    ? `HARD CONSTRAINT: every hotspot callout above must be explicitly referenced across the copy — collectively the hooks and description must mention all of them, and the headline must lean on the strongest one. Do not invent features that are not in that list.`
+    : ""
+}`,
+
               },
             ],
             response_format: { type: "json_object" },
