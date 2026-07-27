@@ -122,6 +122,7 @@ export function ProductViewport({
           max-field-of-view="45deg"
           interpolation-decay="120"
           onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
         >
