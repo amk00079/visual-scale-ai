@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiTryOnRouteImport } from './routes/api/try-on'
 import { Route as ApiAdCopyRouteImport } from './routes/api/ad-copy'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,36 +37,47 @@ const ApiAdCopyRoute = ApiAdCopyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/try-on': typeof ApiTryOnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/ad-copy' | '/api/try-on'
+  fullPaths: '/' | '/sitemap.xml' | '/api/ad-copy' | '/api/try-on'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/ad-copy' | '/api/try-on'
-  id: '__root__' | '/' | '/api/ad-copy' | '/api/try-on'
+  to: '/' | '/sitemap.xml' | '/api/ad-copy' | '/api/try-on'
+  id: '__root__' | '/' | '/sitemap.xml' | '/api/ad-copy' | '/api/try-on'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiAdCopyRoute: typeof ApiAdCopyRoute
   ApiTryOnRoute: typeof ApiTryOnRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiAdCopyRoute: ApiAdCopyRoute,
   ApiTryOnRoute: ApiTryOnRoute,
 }
