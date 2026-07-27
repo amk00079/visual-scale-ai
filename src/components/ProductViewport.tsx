@@ -59,14 +59,21 @@ export function ProductViewport({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     down.current = { x: e.clientX, y: e.clientY };
-    setQuality("low");
+  };
+
+  // only drop to the low-poly mesh once an actual orbit drag starts, so a
+  // simple click never reloads the model mid-gesture (that would break picking)
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const start = down.current;
+    if (!start) return;
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) setQuality("low");
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     const start = down.current;
     down.current = null;
     // back to the full-resolution mesh once the view goes idle
-    window.setTimeout(() => setQuality("high"), 90);
+    window.setTimeout(() => setQuality("high"), 120);
     if (!start) return;
     const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
     if (moved > 6) return; // that was an orbit drag, not a click
