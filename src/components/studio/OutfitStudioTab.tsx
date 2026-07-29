@@ -3,7 +3,7 @@ import { Loader2, Shirt, Sparkles, User, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UploadBox } from "@/components/UploadBox";
 import { HDImageCard, type ImageAsset } from "@/components/HDImageCard";
-import { fileToAsset, urlToAsset } from "@/lib/fileAsset";
+import { compressDataUrl, fileToAsset, urlToAsset } from "@/lib/fileAsset";
 import modelA from "@/assets/model-a.jpg";
 import modelB from "@/assets/model-b.jpg";
 import modelC from "@/assets/model-c.jpg";
@@ -43,17 +43,36 @@ export function OutfitStudioTab() {
     setLoading(true);
     setError(null);
     try {
+      const [topImage, bottomImage, personImage] = await Promise.all([
+        top ? compressDataUrl(top.url) : Promise.resolve(undefined),
+        bottom ? compressDataUrl(bottom.url) : Promise.resolve(undefined),
+        compressDataUrl(person.url),
+      ]);
+
       const res = await fetch("/api/try-on", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topImage: top?.url,
-          bottomImage: bottom?.url,
-          personImage: person.url,
-        }),
+        body: JSON.stringify({ topImage, bottomImage, personImage }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.image) throw new Error(data.error ?? "Outfit generation failed");
+
+      if (!res.ok) {
+        let message = `Outfit generation failed (${res.status})`;
+        const raw = await res.text().catch(() => "");
+        try {
+          const parsed = JSON.parse(raw) as { error?: string };
+          if (parsed?.error) message = parsed.error;
+        } catch {
+          if (res.status === 413) {
+            message = "Those images are too large — try smaller photos.";
+          } else if (raw.trim()) {
+            message = raw.trim().slice(0, 160);
+          }
+        }
+        throw new Error(message);
+      }
+
+      const data = (await res.json().catch(() => null)) as { image?: string } | null;
+      if (!data?.image) throw new Error("The model did not return an image");
       const label = [top?.name, bottom?.name].filter(Boolean).join(" + ") || "Outfit";
       const result: OutfitResult = { id: `o${Date.now()}`, label, image: data.image };
       setHistory((prev) => [...prev, result]);
