@@ -3,7 +3,7 @@ import { Loader2, Shirt, Sparkles, User, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UploadBox } from "@/components/UploadBox";
 import { HDImageCard, type ImageAsset } from "@/components/HDImageCard";
-import { fileToAsset, urlToAsset } from "@/lib/fileAsset";
+import { compressDataUrl, fileToAsset, urlToAsset } from "@/lib/fileAsset";
 import modelA from "@/assets/model-a.jpg";
 import modelB from "@/assets/model-b.jpg";
 import modelC from "@/assets/model-c.jpg";
