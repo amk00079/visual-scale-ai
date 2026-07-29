@@ -24,6 +24,36 @@ export function imageDimensions(url: string): Promise<{ width: number; height: n
   });
 }
 
+/**
+ * Downscale + JPEG-compress a data URL so the Base64 payload stays small
+ * enough for the API (max width 600px, quality 0.6).
+ */
+export function compressDataUrl(
+  dataUrl: string,
+  maxWidth = 600,
+  quality = 0.6,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.naturalWidth);
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Could not process that image"));
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("Could not read that image"));
+    img.src = dataUrl;
+  });
+}
+
 export async function urlToAsset(url: string, name: string): Promise<ImageAsset> {
   const res = await fetch(url);
   const blob = await res.blob();
