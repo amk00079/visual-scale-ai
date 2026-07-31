@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHotspotFeaturesRouteImport } from './routes/api/hotspot-features'
 import { Route as ApiGlbProxyRouteImport } from './routes/api/glb-proxy'
+import { Route as ApiGenerateOutfitRouteImport } from './routes/api/generate-outfit'
 import { Route as ApiGenerate3dRouteImport } from './routes/api/generate-3d'
 import { Route as ApiAdCopyRouteImport } from './routes/api/ad-copy'
 
@@ -36,6 +37,11 @@ const ApiGlbProxyRoute = ApiGlbProxyRouteImport.update({
   path: '/api/glb-proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGenerateOutfitRoute = ApiGenerateOutfitRouteImport.update({
+  id: '/api/generate-outfit',
+  path: '/api/generate-outfit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGenerate3dRoute = ApiGenerate3dRouteImport.update({
   id: '/api/generate-3d',
   path: '/api/generate-3d',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/generate-3d': typeof ApiGenerate3dRoute
+  '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/generate-3d': typeof ApiGenerate3dRoute
+  '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/ad-copy': typeof ApiAdCopyRoute
   '/api/generate-3d': typeof ApiGenerate3dRoute
+  '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/ad-copy'
     | '/api/generate-3d'
+    | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/ad-copy'
     | '/api/generate-3d'
+    | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/ad-copy'
     | '/api/generate-3d'
+    | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiAdCopyRoute: typeof ApiAdCopyRoute
   ApiGenerate3dRoute: typeof ApiGenerate3dRoute
+  ApiGenerateOutfitRoute: typeof ApiGenerateOutfitRoute
   ApiGlbProxyRoute: typeof ApiGlbProxyRoute
   ApiHotspotFeaturesRoute: typeof ApiHotspotFeaturesRoute
 }
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGlbProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generate-outfit': {
+      id: '/api/generate-outfit'
+      path: '/api/generate-outfit'
+      fullPath: '/api/generate-outfit'
+      preLoaderRoute: typeof ApiGenerateOutfitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/generate-3d': {
       id: '/api/generate-3d'
       path: '/api/generate-3d'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiAdCopyRoute: ApiAdCopyRoute,
   ApiGenerate3dRoute: ApiGenerate3dRoute,
+  ApiGenerateOutfitRoute: ApiGenerateOutfitRoute,
   ApiGlbProxyRoute: ApiGlbProxyRoute,
   ApiHotspotFeaturesRoute: ApiHotspotFeaturesRoute,
 }

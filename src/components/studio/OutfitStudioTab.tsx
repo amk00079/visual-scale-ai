@@ -52,7 +52,13 @@ export function OutfitStudioTab() {
         compressDataUrl(person.url),
       ]);
 
-      const out = await generateOutfit({ topImage, bottomImage, personImage });
+      const out = await generateOutfit({
+        topImage,
+        bottomImage,
+        personImage,
+        topLabel: top?.name,
+        bottomLabel: bottom?.name,
+      });
       if (out.note) setNotice(out.note);
 
       const label = [top?.name, bottom?.name].filter(Boolean).join(" + ") || "Outfit";
