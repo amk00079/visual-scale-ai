@@ -197,6 +197,12 @@ export function OutfitStudioTab() {
           </p>
         )}
 
+        {notice && (
+          <p className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-xs text-muted-foreground">
+            {notice}
+          </p>
+        )}
+
         {active && (
           <div className="surface-panel glow-ring space-y-2 rounded-2xl p-3">
             <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
