@@ -75,6 +75,15 @@ export const Route = createFileRoute("/api/generate-outfit")({
           if (res.status === 401 || res.status === 403) {
             return json({ error: "Image generation credentials were rejected" }, 502);
           }
+          if (/depleted|credits|quota/i.test(detail)) {
+            return json(
+              {
+                error:
+                  "Your Hugging Face inference credits are used up — top them up (or upgrade to PRO) to keep generating outfits.",
+              },
+              402,
+            );
+          }
           return json(
             { error: "Unable to generate visual composition with this content", detail },
             502,
