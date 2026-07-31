@@ -1,11 +1,9 @@
 /**
  * Client-side outfit visualization.
  *
- * Calls the standard Gemini API directly from the browser using
- * VITE_GEMINI_API_KEY — no Lovable Cloud / paid gateway involved.
- * If Gemini can't produce a composed image (missing key, quota, refusal,
- * network error), we fall back to a locally rendered canvas-blended
- * preview so the action always succeeds.
+ * Calls the standard Gemini image model directly from the browser using
+ * VITE_GEMINI_API_KEY. There is no local overlay/canvas fallback — if Gemini
+ * cannot return a composed image, we surface a graceful error instead.
  */
 
 export interface OutfitInput {
@@ -16,11 +14,13 @@ export interface OutfitInput {
 
 export interface OutfitOutput {
   image: string;
-  source: "gemini" | "fallback";
+  source: "gemini";
   note?: string;
 }
 
 const MODEL = "gemini-2.5-flash-image";
+
+export const OUTFIT_ERROR = "Unable to generate visual composition with this content";
 
 function stripDataUrl(dataUrl: string): { mimeType: string; data: string } {
   const match = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
@@ -31,27 +31,46 @@ function stripDataUrl(dataUrl: string): { mimeType: string; data: string } {
 function buildPrompt(input: OutfitInput): string {
   const both = Boolean(input.topImage && input.bottomImage);
   const target = both
-    ? "both the top and the bottom garment together as a complete outfit"
+    ? "the top garment AND the bottom garment (pants/skirt) together as one complete outfit"
     : input.topImage
       ? "the top garment"
       : "the bottom garment";
-  return `You are a virtual try-on compositor. The final image provided is the person/model; the earlier image(s) are garments (top first when present, then bottom).
-Generate one photorealistic full-body image of the person wearing ${target}.
-Keep the person's exact pose, body proportions, face, skin tone, hair, lighting and background unchanged. Composite the garments with realistic fit, fabric folds, shadows and scale, replacing the clothing currently worn in those areas. Output only the final image.`;
+
+  return `Virtual try-on task. Image order: ${
+    [
+      input.topImage ? "1) top garment" : null,
+      input.bottomImage ? `${input.topImage ? "2" : "1"}) bottom garment` : null,
+      `${[input.topImage, input.bottomImage].filter(Boolean).length + 1}) the person`,
+    ]
+      .filter(Boolean)
+      .join(", ")
+  }.
+
+Generate a brand-new, single photo-realistic photograph of the person from the person image actually WEARING ${target}.
+
+Requirements:
+- Do NOT paste, overlay, collage or float the garment images on top of the person. Re-render the garments as real worn clothing on the body.
+- Match perspective and camera angle of the person photo; wrap the garments around the body with correct 3D fit, drape and fabric folds.
+- Preserve the garment's exact colour, pattern, print, texture and material appearance.
+- Preserve the person's identity, face, hair, skin tone, body proportions, pose and the original background.
+- Match lighting direction, shading, contact shadows, occlusion and colour temperature so the clothing looks physically present.
+- Replace whatever clothing the person currently wears in those regions.
+Output only the final composited image.`;
 }
 
 async function callGemini(input: OutfitInput): Promise<string | null> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-  if (!apiKey) return null;
+  if (!apiKey) throw new Error("Missing VITE_GEMINI_API_KEY — add it to your .env to generate outfits.");
 
   const { GoogleGenAI } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey });
 
-  const parts: Array<Record<string, unknown>> = [{ text: buildPrompt(input) }];
+  const parts: Array<Record<string, unknown>> = [];
   for (const img of [input.topImage, input.bottomImage, input.personImage]) {
     if (!img) continue;
     parts.push({ inlineData: stripDataUrl(img) });
   }
+  parts.push({ text: buildPrompt(input) });
 
   const res = await ai.models.generateContent({
     model: MODEL,
@@ -69,84 +88,15 @@ async function callGemini(input: OutfitInput): Promise<string | null> {
   return null;
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not read that image"));
-    img.src = src;
-  });
-}
-
-/** Local canvas mock: person as base, garments blended over torso / legs. */
-async function canvasFallback(input: OutfitInput): Promise<string> {
-  const person = await loadImage(input.personImage);
-  const w = Math.min(person.naturalWidth || 768, 768);
-  const h = Math.round((person.naturalHeight / person.naturalWidth) * w) || 1152;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not render the preview");
-
-  ctx.fillStyle = "#0f172a";
-  ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(person, 0, 0, w, h);
-
-  const drawGarment = async (src: string, top: number, height: number) => {
-    const g = await loadImage(src);
-    const boxW = w * 0.62;
-    const boxH = h * height;
-    const scale = Math.min(boxW / g.naturalWidth, boxH / g.naturalHeight);
-    const gw = g.naturalWidth * scale;
-    const gh = g.naturalHeight * scale;
-    const x = (w - gw) / 2;
-    const y = h * top + (boxH - gh) / 2;
-    ctx.save();
-    ctx.globalAlpha = 0.82;
-    ctx.globalCompositeOperation = "source-over";
-    ctx.drawImage(g, x, y, gw, gh);
-    ctx.globalAlpha = 0.35;
-    ctx.globalCompositeOperation = "multiply";
-    ctx.drawImage(g, x, y, gw, gh);
-    ctx.restore();
-  };
-
-  if (input.topImage) await drawGarment(input.topImage, 0.2, 0.3);
-  if (input.bottomImage) await drawGarment(input.bottomImage, 0.5, 0.32);
-
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = "rgba(15,23,42,0.72)";
-  ctx.fillRect(0, h - 34, w, 34);
-  ctx.fillStyle = "#c4b5fd";
-  ctx.font = "500 15px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Preview mock · local canvas blend", w / 2, h - 12);
-  ctx.restore();
-
-  return canvas.toDataURL("image/jpeg", 0.9);
-}
-
 export async function generateOutfit(input: OutfitInput): Promise<OutfitOutput> {
+  let image: string | null = null;
   try {
-    const image = await callGemini(input);
-    if (image) return { image, source: "gemini" };
-    return {
-      image: await canvasFallback(input),
-      source: "fallback",
-      note: import.meta.env.VITE_GEMINI_API_KEY
-        ? "Gemini couldn't compose this outfit — showing a local blended mock preview."
-        : "No VITE_GEMINI_API_KEY set — showing a local blended mock preview.",
-    };
+    image = await callGemini(input);
   } catch (e) {
-    return {
-      image: await canvasFallback(input),
-      source: "fallback",
-      note: `Gemini call failed (${
-        e instanceof Error ? e.message : "unknown error"
-      }) — showing a local blended mock preview.`,
-    };
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("VITE_GEMINI_API_KEY")) throw new Error(msg);
+    throw new Error(`${OUTFIT_ERROR}${msg ? ` (${msg})` : ""}`);
   }
+  if (!image) throw new Error(OUTFIT_ERROR);
+  return { image, source: "gemini" };
 }

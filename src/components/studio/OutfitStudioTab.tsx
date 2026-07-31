@@ -60,7 +60,9 @@ export function OutfitStudioTab() {
       setHistory((prev) => [...prev, result]);
       setActiveId(result.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Outfit generation failed");
+      setError(
+        e instanceof Error ? e.message : "Unable to generate visual composition with this content",
+      );
     } finally {
       setLoading(false);
     }
