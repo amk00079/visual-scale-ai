@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { UploadBox } from "@/components/UploadBox";
 import { HDImageCard, type ImageAsset } from "@/components/HDImageCard";
 import { compressDataUrl, fileToAsset, urlToAsset } from "@/lib/fileAsset";
+import { generateOutfit } from "@/lib/outfitGen";
 import modelA from "@/assets/model-a.jpg";
 import modelB from "@/assets/model-b.jpg";
 import modelC from "@/assets/model-c.jpg";
