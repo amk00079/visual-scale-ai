@@ -42,6 +42,7 @@ export function OutfitStudioTab() {
     if (!person || (!top && !bottom)) return;
     setLoading(true);
     setError(null);
+    setNotice(null);
     try {
       const [topImage, bottomImage, personImage] = await Promise.all([
         top ? compressDataUrl(top.url) : Promise.resolve(undefined),
@@ -49,32 +50,11 @@ export function OutfitStudioTab() {
         compressDataUrl(person.url),
       ]);
 
-      const res = await fetch("/api/try-on", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topImage, bottomImage, personImage }),
-      });
+      const out = await generateOutfit({ topImage, bottomImage, personImage });
+      if (out.note) setNotice(out.note);
 
-      if (!res.ok) {
-        let message = `Outfit generation failed (${res.status})`;
-        const raw = await res.text().catch(() => "");
-        try {
-          const parsed = JSON.parse(raw) as { error?: string };
-          if (parsed?.error) message = parsed.error;
-        } catch {
-          if (res.status === 413) {
-            message = "Those images are too large — try smaller photos.";
-          } else if (raw.trim()) {
-            message = raw.trim().slice(0, 160);
-          }
-        }
-        throw new Error(message);
-      }
-
-      const data = (await res.json().catch(() => null)) as { image?: string } | null;
-      if (!data?.image) throw new Error("The model did not return an image");
       const label = [top?.name, bottom?.name].filter(Boolean).join(" + ") || "Outfit";
-      const result: OutfitResult = { id: `o${Date.now()}`, label, image: data.image };
+      const result: OutfitResult = { id: `o${Date.now()}`, label, image: out.image };
       setHistory((prev) => [...prev, result]);
       setActiveId(result.id);
     } catch (e) {
@@ -83,6 +63,7 @@ export function OutfitStudioTab() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-5">
