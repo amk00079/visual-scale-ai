@@ -2,124 +2,106 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
 interface Body {
-  /** Data URL or bare base64 of the person / model photo. */
+  /** Data URL of the person / model photo. */
   personImage?: string;
-  /** Human readable garment details, e.g. "Top: linen shirt, Bottom: black jeans". */
+  /** Optional garment reference images (data URLs). */
+  topImage?: string;
+  bottomImage?: string;
   topLabel?: string;
   bottomLabel?: string;
-  prompt?: string;
 }
 
 const MODEL = "Qwen/Qwen-Image-Edit-2511";
+// HF Inference Providers routing for the model's live provider mapping.
+const ENDPOINT = "https://router.huggingface.co/fal-ai/fal-ai/qwen-image-edit-plus";
 
 export const Route = createFileRoute("/api/generate-outfit")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const token = process.env.HF_TOKEN;
-        if (!token) return json({ error: "HF_TOKEN is not configured" }, 500);
+        if (!token) return json({ error: "Image generation is not configured" }, 500);
 
         const body = (await request.json()) as Body;
-        const personImage = (body.personImage ?? "").trim();
-        if (!personImage) return json({ error: "A model/person image is required" }, 400);
+        const person = asDataUrl(body.personImage);
+        if (!person) return json({ error: "A model/person image is required" }, 400);
 
-        const base64 = personImage.replace(/^data:[^;]+;base64,/, "");
-        const garments = [
-          body.topLabel ? `top garment: ${body.topLabel}` : null,
-          body.bottomLabel ? `bottom garment: ${body.bottomLabel}` : null,
-        ]
-          .filter(Boolean)
-          .join(", ");
+        const top = asDataUrl(body.topImage);
+        const bottom = asDataUrl(body.bottomImage);
 
-        const prompt =
-          (body.prompt ?? "").trim() ||
-          `Replace the clothing on the person in this photo so they are realistically wearing the ${
-            garments || "provided outfit"
-          }. Re-render the garments as real worn clothing with correct 3D fit, drape and fabric folds. Preserve the person's identity, face, hair, skin tone, body proportions, pose and the original background. Match lighting direction, shading, contact shadows and colour temperature so the clothing looks physically present. Photo-realistic, sharp, high resolution.`;
-
-        const endpoints = [`https://router.huggingface.co/hf-inference/models/${MODEL}`];
-
-        let lastError = "";
-        for (const url of endpoints) {
-          let res: Response;
-          try {
-            res = await fetch(url, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-                Accept: "image/png",
-              },
-              body: JSON.stringify({
-                inputs: base64,
-                parameters: { prompt },
-              }),
-            });
-          } catch (e) {
-            lastError = e instanceof Error ? e.message : "network error";
-            continue;
-          }
-
-          if (!res.ok) {
-            lastError = (await res.text()).slice(0, 400);
-            if (res.status === 401 || res.status === 403) {
-              return json({ error: "Hugging Face rejected the stored token" }, 502);
-            }
-            continue;
-          }
-
-          const contentType = res.headers.get("content-type") ?? "";
-          if (contentType.startsWith("image/")) {
-            const buffer = await res.arrayBuffer();
-            return json(
-              { image: `data:${contentType};base64,${toBase64(buffer)}`, model: MODEL },
-              200,
-            );
-          }
-
-          // Some providers answer with JSON containing a URL or base64 payload.
-          const text = await res.text();
-          try {
-            const parsed = JSON.parse(text) as Record<string, unknown>;
-            const image =
-              pickString(parsed, ["image", "url", "output"]) ??
-              pickString((parsed.images as Record<string, unknown>[])?.[0] ?? {}, ["url", "b64_json"]);
-            if (image) {
-              return json(
-                { image: image.startsWith("http") || image.startsWith("data:") ? image : `data:image/png;base64,${image}`, model: MODEL },
-                200,
-              );
-            }
-          } catch {
-            /* fall through */
-          }
-          lastError = text.slice(0, 400);
+        const refs: string[] = [];
+        const order: string[] = ["image 1 is the person"];
+        if (top) {
+          refs.push(top);
+          order.push(`image ${refs.length + 1} is the top garment${body.topLabel ? ` (${body.topLabel})` : ""}`);
+        }
+        if (bottom) {
+          refs.push(bottom);
+          order.push(
+            `image ${refs.length + 1} is the bottom garment${body.bottomLabel ? ` (${body.bottomLabel})` : ""}`,
+          );
         }
 
-        return json(
-          { error: "Unable to generate visual composition with this content", detail: lastError },
-          502,
-        );
+        const target = [top ? "the top garment" : null, bottom ? "the bottom garment" : null]
+          .filter(Boolean)
+          .join(" and ");
+
+        const prompt = `Virtual try-on: ${order.join(", ")}. Generate a photo-realistic photograph of the person in image 1 actually wearing ${
+          target || "the provided outfit"
+        }. Re-render the garments as real worn clothing with correct 3D fit, drape and fabric folds — never paste or overlay the garment images. Preserve the garment colour, pattern, print and texture exactly. Preserve the person's identity, face, hair, skin tone, body proportions, pose and original background. Match lighting direction, shading, contact shadows and colour temperature so the clothing looks physically present. Replace whatever clothing the person currently wears in those regions.`;
+
+        let res: Response;
+        try {
+          res = await fetch(ENDPOINT, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ prompt, image_urls: [person, ...refs] }),
+          });
+        } catch (e) {
+          return json(
+            {
+              error: "Unable to generate visual composition with this content",
+              detail: e instanceof Error ? e.message : "network error",
+            },
+            502,
+          );
+        }
+
+        if (!res.ok) {
+          const detail = (await res.text()).slice(0, 400);
+          if (res.status === 401 || res.status === 403) {
+            return json({ error: "Image generation credentials were rejected" }, 502);
+          }
+          return json(
+            { error: "Unable to generate visual composition with this content", detail },
+            502,
+          );
+        }
+
+        const data = (await res.json()) as {
+          images?: Array<{ url?: string }>;
+          image?: { url?: string };
+        };
+        const url = data.images?.[0]?.url ?? data.image?.url;
+        if (!url) {
+          return json({ error: "Unable to generate visual composition with this content" }, 502);
+        }
+
+        return json({ image: url, model: MODEL }, 200);
       },
     },
   },
 });
 
-function pickString(obj: Record<string, unknown>, keys: string[]): string | null {
-  for (const key of keys) {
-    const value = obj?.[key];
-    if (typeof value === "string" && value.length > 0) return value;
-  }
-  return null;
-}
-
-function toBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
+function asDataUrl(value?: string): string | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  return raw.startsWith("data:") || raw.startsWith("http")
+    ? raw
+    : `data:image/jpeg;base64,${raw}`;
 }
 
 function json(payload: unknown, status: number) {

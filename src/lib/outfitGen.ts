@@ -30,6 +30,8 @@ export async function generateOutfit(input: OutfitInput): Promise<OutfitOutput> 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         personImage: input.personImage,
+        topImage: input.topImage,
+        bottomImage: input.bottomImage,
         topLabel: input.topLabel,
         bottomLabel: input.bottomLabel,
       }),
