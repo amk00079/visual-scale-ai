@@ -29,6 +29,7 @@ export function OutfitStudioTab() {
   const [presetId, setPresetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [history, setHistory] = useState<OutfitResult[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
