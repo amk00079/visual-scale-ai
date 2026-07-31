@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiTmpFetchtestRouteImport } from './routes/api/tmp-fetchtest'
 import { Route as ApiHotspotFeaturesRouteImport } from './routes/api/hotspot-features'
 import { Route as ApiGlbProxyRouteImport } from './routes/api/glb-proxy'
 import { Route as ApiGenerateOutfitRouteImport } from './routes/api/generate-outfit'
@@ -26,11 +25,6 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTmpFetchtestRoute = ApiTmpFetchtestRouteImport.update({
-  id: '/api/tmp-fetchtest',
-  path: '/api/tmp-fetchtest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHotspotFeaturesRoute = ApiHotspotFeaturesRouteImport.update({
@@ -67,7 +61,6 @@ export interface FileRoutesByFullPath {
   '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
-  '/api/tmp-fetchtest': typeof ApiTmpFetchtestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,7 +70,6 @@ export interface FileRoutesByTo {
   '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
-  '/api/tmp-fetchtest': typeof ApiTmpFetchtestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,7 +80,6 @@ export interface FileRoutesById {
   '/api/generate-outfit': typeof ApiGenerateOutfitRoute
   '/api/glb-proxy': typeof ApiGlbProxyRoute
   '/api/hotspot-features': typeof ApiHotspotFeaturesRoute
-  '/api/tmp-fetchtest': typeof ApiTmpFetchtestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,7 +91,6 @@ export interface FileRouteTypes {
     | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
-    | '/api/tmp-fetchtest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -110,7 +100,6 @@ export interface FileRouteTypes {
     | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
-    | '/api/tmp-fetchtest'
   id:
     | '__root__'
     | '/'
@@ -120,7 +109,6 @@ export interface FileRouteTypes {
     | '/api/generate-outfit'
     | '/api/glb-proxy'
     | '/api/hotspot-features'
-    | '/api/tmp-fetchtest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,7 +119,6 @@ export interface RootRouteChildren {
   ApiGenerateOutfitRoute: typeof ApiGenerateOutfitRoute
   ApiGlbProxyRoute: typeof ApiGlbProxyRoute
   ApiHotspotFeaturesRoute: typeof ApiHotspotFeaturesRoute
-  ApiTmpFetchtestRoute: typeof ApiTmpFetchtestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -148,13 +135,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/tmp-fetchtest': {
-      id: '/api/tmp-fetchtest'
-      path: '/api/tmp-fetchtest'
-      fullPath: '/api/tmp-fetchtest'
-      preLoaderRoute: typeof ApiTmpFetchtestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/hotspot-features': {
@@ -203,8 +183,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGenerateOutfitRoute: ApiGenerateOutfitRoute,
   ApiGlbProxyRoute: ApiGlbProxyRoute,
   ApiHotspotFeaturesRoute: ApiHotspotFeaturesRoute,
-  ApiTmpFetchtestRoute: ApiTmpFetchtestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

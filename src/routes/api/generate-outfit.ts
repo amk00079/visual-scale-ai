@@ -37,10 +37,7 @@ export const Route = createFileRoute("/api/generate-outfit")({
             garments || "provided outfit"
           }. Re-render the garments as real worn clothing with correct 3D fit, drape and fabric folds. Preserve the person's identity, face, hair, skin tone, body proportions, pose and the original background. Match lighting direction, shading, contact shadows and colour temperature so the clothing looks physically present. Photo-realistic, sharp, high resolution.`;
 
-        const endpoints = [
-          `https://router.huggingface.co/hf-inference/models/${MODEL}`,
-          `https://api-inference.huggingface.co/models/${MODEL}`,
-        ];
+        const endpoints = [`https://router.huggingface.co/hf-inference/models/${MODEL}`];
 
         let lastError = "";
         for (const url of endpoints) {
